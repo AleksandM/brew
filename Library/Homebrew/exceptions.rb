@@ -53,23 +53,14 @@ class NotAKegError < RuntimeError; end
 
 # Raised when a keg doesn't exist.
 class NoSuchKegError < RuntimeError
-  attr_reader :name
-
-  def initialize(name)
-    @name = name
-    super "No such keg: #{HOMEBREW_CELLAR}/#{name}"
-  end
-end
-
-# Raised when a keg from a specific tap doesn't exist.
-class NoSuchKegFromTapError < RuntimeError
   attr_reader :name, :tap
 
-  sig { params(name: String, tap: Tap).void }
-  def initialize(name, tap)
+  def initialize(name, tap: nil)
     @name = name
     @tap = tap
-    super "No such keg: #{HOMEBREW_CELLAR}/#{name} from tap #{tap}"
+    message = "No such keg: #{HOMEBREW_CELLAR}/#{name}"
+    message += " from tap #{tap}" if tap
+    super message
   end
 end
 
@@ -206,6 +197,10 @@ end
 
 # Shared methods for formula unreadable errors.
 module FormulaUnreadableErrorModule
+  extend T::Helpers
+
+  requires_ancestor { FormulaOrCaskUnavailableError }
+
   attr_reader :formula_error
 
   sig { returns(String) }
@@ -227,12 +222,12 @@ end
 
 # Raised when a formula in a specific tap is unavailable.
 class TapFormulaUnavailableError < FormulaUnavailableError
-  attr_reader :tap, :user, :repo
+  attr_reader :tap, :user, :repository
 
   def initialize(tap, name)
     @tap = tap
     @user = tap.user
-    @repo = tap.repo
+    @repository = tap.repository
     super "#{tap}/#{name}"
   end
 
@@ -571,7 +566,7 @@ class UnbottledError < RuntimeError
   def initialize(formulae)
     require "utils"
 
-    msg = +<<~EOS
+    msg = <<~EOS
       The following #{Utils.pluralize("formula", formulae.count, plural: "e")} cannot be installed from #{Utils.pluralize("bottle", formulae.count)} and must be
       built from source.
         #{formulae.to_sentence}
@@ -695,7 +690,7 @@ class ErrorDuringExecution < RuntimeError
       raise ArgumentError, "Status neither has `exitstatus` nor `termsig`."
     end
 
-    s = +"Failure while executing; `#{redacted_cmd}` #{reason}."
+    s = "Failure while executing; `#{redacted_cmd}` #{reason}."
 
     if Array(output).present?
       format_output_line = lambda do |type_line|

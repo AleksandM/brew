@@ -5,8 +5,6 @@ require "test_runner_formula"
 require "github_runner"
 
 class GitHubRunnerMatrix
-  # FIXME: Enable cop again when https://github.com/sorbet/sorbet/issues/3532 is fixed.
-  # rubocop:disable Style/MutableConstant
   RunnerSpec = T.type_alias { T.any(LinuxRunnerSpec, MacOSRunnerSpec) }
   private_constant :RunnerSpec
 
@@ -36,8 +34,6 @@ class GitHubRunnerMatrix
 
   RunnerSpecHash = T.type_alias { T.any(LinuxRunnerSpecHash, MacOSRunnerSpecHash) }
   private_constant :RunnerSpecHash
-  # rubocop:enable Style/MutableConstant
-
   sig { returns(T::Array[GitHubRunner]) }
   attr_reader :runners
 
@@ -131,7 +127,7 @@ class GitHubRunnerMatrix
 
   NEWEST_GITHUB_ACTIONS_INTEL_MACOS_RUNNER = :ventura
   OLDEST_GITHUB_ACTIONS_INTEL_MACOS_RUNNER = :monterey
-  NEWEST_GITHUB_ACTIONS_ARM_MACOS_RUNNER = :sonoma
+  NEWEST_GITHUB_ACTIONS_ARM_MACOS_RUNNER = :sequoia
   OLDEST_GITHUB_ACTIONS_ARM_MACOS_RUNNER = :sonoma
   GITHUB_ACTIONS_RUNNER_TIMEOUT = 360
 
@@ -153,7 +149,7 @@ class GitHubRunnerMatrix
     use_github_runner ||= @dependent_matrix
     use_github_runner &&= runner_timeout <= GITHUB_ACTIONS_RUNNER_TIMEOUT
 
-    ephemeral_suffix = +"-#{github_run_id}"
+    ephemeral_suffix = "-#{github_run_id}"
     ephemeral_suffix << "-deps" if @dependent_matrix
     ephemeral_suffix << "-long" if runner_timeout == GITHUB_ACTIONS_LONG_TIMEOUT
     ephemeral_suffix.freeze
@@ -181,7 +177,7 @@ class GitHubRunnerMatrix
       )
       @runners << create_runner(:macos, :arm64, spec, macos_version)
 
-      next if macos_version > NEWEST_HOMEBREW_CORE_INTEL_MACOS_RUNNER
+      next if !@all_supported && macos_version > NEWEST_HOMEBREW_CORE_INTEL_MACOS_RUNNER
 
       github_runner_available = macos_version <= NEWEST_GITHUB_ACTIONS_INTEL_MACOS_RUNNER &&
                                 macos_version >= OLDEST_GITHUB_ACTIONS_INTEL_MACOS_RUNNER

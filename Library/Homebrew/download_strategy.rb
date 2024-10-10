@@ -31,6 +31,10 @@ class AbstractDownloadStrategy
 
   # Extension for bottle downloads.
   module Pourable
+    extend T::Helpers
+
+    requires_ancestor { AbstractDownloadStrategy }
+
     def stage
       ohai "Pouring #{basename}"
       super
@@ -74,13 +78,6 @@ class AbstractDownloadStrategy
   sig { void }
   def quiet!
     @quiet = true
-  end
-
-  # Disable any output during downloading.
-  sig { void }
-  def shutup!
-    odisabled "`AbstractDownloadStrategy#shutup!`", "`AbstractDownloadStrategy#quiet!`"
-    quiet!
   end
 
   def quiet?
